@@ -1,0 +1,14 @@
+SELECT
+LAST_DAY(Data_de_Credenciamento) as mes_ref,
+Polo,
+Plano,
+COUNT(stonecode) as num_clientes,
+FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
+WHERE 1=1
+AND Subcanal = 'FRANQUIA'
+AND Adesao_Nao_Pagante = 1
+AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
+GROUP BY
+LAST_DAY(Data_de_Credenciamento),
+Polo,
+Plano
