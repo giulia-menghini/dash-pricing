@@ -1,33 +1,40 @@
-WITH
-
-novos_clientes_1 AS (
-  SELECT
-    *,
-    CASE
-      WHEN Tier_Estimado = 'a.0-7k' THEN 'A. 0-7k'
-      WHEN Tier_Estimado = 'b.7-15k' THEN 'B. 7-15k'
-      WHEN Tier_Estimado = 'c.15-30k' THEN 'C. 15-30k'
-      WHEN Tier_Estimado = 'd.30-50k' THEN 'D. 30-50k'
-      WHEN Tier_Estimado = 'e.50-100k' THEN 'E. 50-100k'
-      WHEN Tier_Estimado = 'f.100k+' THEN 'F. 100k+'
-    END AS tier_tpv_precificado
-  FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
-  
-),
-
-novos_clientes AS (
-  SELECT
+WITH 
+  novos_clientes AS (
+  SELECT 
     Polo,
-    tier_tpv_precificado,
-    COUNT(stonecode) as novos_clientes
-  FROM novos_clientes_1
+    COUNT(stonecode) as novos_clientes,
+    Tier_Estimado
+  FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
   WHERE 1=1
-    AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
+    AND Data_de_Credenciamento >= '2022-10-01'
+    AND Subcanal = 'FRANQUIA'
   GROUP BY 
     Polo,
-    tier_tpv_precificado
+    Tier_Estimado
+),
+
+hc AS (
+  SELECT
+    LAST_DAY(hc.Data) AS mes_ref,
+    Grupo_3 as Polo,
+    SUM((CASE WHEN EXTRACT (DAYOFWEEK from Data)=7 THEN 0.5 ELSE 1 END) * Ativo) as Time_Ativo
+  FROM
+    `ctra-comercial-1554819299431.metabase_planejamento_central.analitico_headcount_v2` hc
+  WHERE
+    hc.Data >= '2022-10-01'
+    and Subcanal = 'FRANQUIA'
+  GROUP BY
+    LAST_DAY(hc.Data),
+    Polo
 )
 
-SELECT *
-FROM novos_clientes
-WHERE 1=1
+  SELECT
+    hc.mes_ref,
+    novos_clientes.Polo,
+    novos_clientes.novos_clientes,
+    novos_clientes.Tier_Estimado,
+    hc.Time_Ativo
+  FROM novos_clientes
+  JOIN hc
+  ON novos_clientes.Polo = hc.Polo
+  WHERE 1=1
