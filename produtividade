@@ -1,0 +1,33 @@
+WITH
+
+novos_clientes_1 AS (
+  SELECT
+    *,
+    CASE
+      WHEN Tier_Estimado = 'a.0-7k' THEN 'A. 0-7k'
+      WHEN Tier_Estimado = 'b.7-15k' THEN 'B. 7-15k'
+      WHEN Tier_Estimado = 'c.15-30k' THEN 'C. 15-30k'
+      WHEN Tier_Estimado = 'd.30-50k' THEN 'D. 30-50k'
+      WHEN Tier_Estimado = 'e.50-100k' THEN 'E. 50-100k'
+      WHEN Tier_Estimado = 'f.100k+' THEN 'F. 100k+'
+    END AS tier_tpv_precificado
+  FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
+  
+),
+
+novos_clientes AS (
+  SELECT
+    Polo,
+    tier_tpv_precificado,
+    COUNT(stonecode) as novos_clientes
+  FROM novos_clientes_1
+  WHERE 1=1
+    AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
+  GROUP BY 
+    Polo,
+    tier_tpv_precificado
+)
+
+SELECT *
+FROM novos_clientes
+WHERE 1=1
