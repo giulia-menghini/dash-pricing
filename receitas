@@ -1,0 +1,80 @@
+WITH 
+    novos_clientes AS (
+    SELECT 
+      Polo,
+      stonecode,
+      Tier_Estimado,
+      Plano
+    FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
+    WHERE 1=1
+      AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
+      AND Subcanal = 'FRANQUIA'
+    GROUP BY 
+      Polo,
+      Tier_Estimado,
+      stonecode,
+      Plano
+),
+
+  carteira AS (
+    SELECT 
+      stonecode,
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia,
+      tpv_m0,
+      net_mdr_m0,
+      rav_m0,
+      Mensalidade_m0,
+      Receita_liquida_ex_floating as banking,
+      rebate_net_mdr,
+      rebate_rav,
+      rebate_mensalidade,
+      rebate_banking,
+      CSP_sem_piso,
+      Recorrencia_Logistica,
+      rebate_net_mdr + rebate_rav + rebate_mensalidade + rebate_banking + CSP_sem_piso + Recorrencia_Logistica as lucro_bruto_csp_sem_piso
+    FROM `ssmgifw8a47t5jt04sg9hnp4uu24ja.acompanhamento_carteira.carteira_consolidada_franqueados`
+    WHERE 1=1
+    AND data_referencia = '2022-10-31'
+    GROUP BY
+      stonecode,
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia,
+      tpv_m0,
+      net_mdr_m0,
+      rav_m0,
+      Mensalidade_m0,
+      Receita_liquida_ex_floating,
+      rebate_net_mdr,
+      rebate_rav,
+      rebate_mensalidade,
+      rebate_banking,
+      CSP_sem_piso,
+      Recorrencia_Logistica
+  )
+
+  SELECT
+      novos_clientes.stonecode,
+      novos_clientes.Polo,
+      carteira.Distrito_franquia,
+      carteira.Regional_franquia,
+      Plano,
+      novos_clientes.Tier_Estimado,
+      carteira.tpv_m0,
+      net_mdr_m0,
+      rav_m0,
+      Mensalidade_m0,
+      banking,
+      rebate_net_mdr,
+      rebate_rav,
+      rebate_mensalidade,
+      rebate_banking,
+      CSP_sem_piso,
+      Recorrencia_Logistica,
+      rebate_net_mdr + rebate_rav + rebate_mensalidade + rebate_banking - CSP_sem_piso + Recorrencia_Logistica as lucro_bruto_csp_sem_piso
+  FROM novos_clientes
+  JOIN carteira
+  ON novos_clientes.stonecode = carteira.stonecode
+  WHERE 1=1
