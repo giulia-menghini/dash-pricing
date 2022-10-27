@@ -1,40 +1,56 @@
 WITH 
-  novos_clientes AS (
-  SELECT 
-    Polo,
-    COUNT(stonecode) as novos_clientes,
-    Tier_Estimado
-  FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
-  WHERE 1=1
-    AND Data_de_Credenciamento >= '2022-10-01'
-    AND Subcanal = 'FRANQUIA'
-  GROUP BY 
-    Polo,
-    Tier_Estimado
+    novos_clientes AS (
+    SELECT 
+      Polo,
+      COUNT(stonecode) as novos_clientes,
+      Tier_Estimado
+    FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
+    WHERE 1=1
+      AND Data_de_Credenciamento >= '2022-10-01'
+      AND Subcanal = 'FRANQUIA'
+    GROUP BY 
+      Polo,
+      Tier_Estimado
 ),
 
-hc AS (
-  SELECT
-    LAST_DAY(hc.Data) AS mes_ref,
-    Grupo_3 as Polo,
-    SUM((CASE WHEN EXTRACT (DAYOFWEEK from Data)=7 THEN 0.5 ELSE 1 END) * Ativo) as Time_Ativo
-  FROM
-    `ctra-comercial-1554819299431.metabase_planejamento_central.analitico_headcount_v2` hc
-  WHERE
-    hc.Data >= '2022-10-01'
-    and Subcanal = 'FRANQUIA'
-  GROUP BY
-    LAST_DAY(hc.Data),
-    Polo
-)
+  hc AS (
+    SELECT
+      LAST_DAY(hc.Data) AS mes_ref,
+      Grupo_3 as Polo,
+      SUM((CASE WHEN EXTRACT (DAYOFWEEK from Data)=7 THEN 0.5 ELSE 1 END) * Ativo) as Time_Ativo
+    FROM
+      `ctra-comercial-1554819299431.metabase_planejamento_central.analitico_headcount_v2` hc
+    WHERE
+      LAST_DAY(hc.Data) = '2022-10-31'
+      and Subcanal = 'FRANQUIA'
+    GROUP BY
+      LAST_DAY(hc.Data),
+      Polo
+),
+
+  carteira AS (
+    SELECT 
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia
+    FROM `ssmgifw8a47t5jt04sg9hnp4uu24ja.acompanhamento_carteira.carteira_consolidada_franqueados`
+    GROUP BY
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia   
+  )
 
   SELECT
     hc.mes_ref,
     novos_clientes.Polo,
+    carteira.Distrito_franquia,
+    carteira.Regional_franquia,
     novos_clientes.novos_clientes,
     novos_clientes.Tier_Estimado,
     hc.Time_Ativo
   FROM novos_clientes
   JOIN hc
   ON novos_clientes.Polo = hc.Polo
+  JOIN carteira
+  ON novos_clientes.Polo = Polo_endereco
   WHERE 1=1
