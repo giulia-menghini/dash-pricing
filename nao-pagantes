@@ -1,14 +1,40 @@
-SELECT
-LAST_DAY(Data_de_Credenciamento) as mes_ref,
-Polo,
-Plano,
-COUNT(stonecode) as num_clientes,
-FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
-WHERE 1=1
-AND Subcanal = 'FRANQUIA'
-AND Adesao_Nao_Pagante = 1
-AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
-GROUP BY
-LAST_DAY(Data_de_Credenciamento),
-Polo,
-Plano
+WITH
+  clientes AS (
+  SELECT
+    LAST_DAY(Data_de_Credenciamento) as mes_ref,
+    Polo,
+    Plano,
+    COUNT(stonecode) as num_clientes,
+  FROM `ctra-comercial-1554819299431.sandbox_pricing.Plano_Stone_Clientes` 
+  WHERE 1=1
+    AND Subcanal = 'FRANQUIA'
+    AND Adesao_Nao_Pagante = 1
+    AND LAST_DAY(Data_de_Credenciamento) = '2022-10-31'
+  GROUP BY
+    LAST_DAY(Data_de_Credenciamento),
+    Polo,
+    Plano
+),
+
+  carteira AS (
+    SELECT 
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia
+    FROM `ssmgifw8a47t5jt04sg9hnp4uu24ja.acompanhamento_carteira.carteira_consolidada_franqueados`
+    GROUP BY
+      Polo_endereco,
+      Distrito_franquia,
+      Regional_franquia
+  )
+
+  SELECT
+    mes_ref,
+    Polo,
+    Distrito_franquia,
+    Regional_franquia,
+    Plano,
+    num_clientes
+  FROM clientes
+  JOIN carteira
+  ON Polo = Polo_endereco
